@@ -2,9 +2,9 @@
 #include <SoftwareSerial.h>
 
 // Инициализация на 4-те мотора
-AF_DCMotor motorFrontLeft(1);
-AF_DCMotor motorBackLeft(2);
-AF_DCMotor motorFrontRight(3);
+AF_DCMotor motorFrontLeft(2);
+AF_DCMotor motorBackLeft(3);
+AF_DCMotor motorFrontRight(1);
 AF_DCMotor motorBackRight(4);
 
 // Инициализация на софтуерен сериен порт за BLE модула
