@@ -1,10 +1,179 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bg">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Контролен Панел - Робот</title>
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --panel-bg: #16213e;
+            --primary-color: #0f3460;
+            --accent-color: #e94560;
+            --text-color: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #status-bar {
+            background-color: var(--panel-bg);
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            font-size: 14px;
+            color: #4cd137;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Контейнер за бутоните (D-pad) */
+        .d-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            grid-template-rows: repeat(3, 80px);
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 15px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #0a2444, 0 10px 10px rgba(0,0,0,0.5);
+            transition: all 0.1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none; /* Предотвратява маркиране на текста при бързо кликане */
+        }
+
+        .btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 #0a2444, 0 4px 4px rgba(0,0,0,0.5);
+        }
+
+        /* Позициониране на бутоните в решетката */
+        .btn-up { grid-column: 2; grid-row: 1; }
+        .btn-left { grid-column: 1; grid-row: 2; }
+        .btn-stop {
+            grid-column: 2;
+            grid-row: 2;
+            background-color: var(--accent-color);
+            box-shadow: 0 6px 0 #a02c40, 0 10px 10px rgba(0,0,0,0.5);
+            border-radius: 50%; /* Стоп бутонът е кръгъл за акцент */
+        }
+        .btn-stop:active {
+            box-shadow: 0 0 0 #a02c40, 0 4px 4px rgba(0,0,0,0.5);
+        }
+        .btn-right { grid-column: 3; grid-row: 2; }
+        .btn-down { grid-column: 2; grid-row: 3; }
+        .speed-controls {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .btn-speed {
+            background-color: #e67e22;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+        }
+
+    </style>
 </head>
 <body>
-<h1>Свали си html шаблон!</h1>
+
+    <!-- Django CSRF Token (скрит), необходим за сигурността на POST заявките -->
+    {% csrf_token %}
+
+    <h1>Робо-Контрол</h1>
+    <div id="status-bar">Статус: В готовност</div>
+
+    <div class="d-pad">
+        <button class="btn btn-up" onclick="sendCommand('F')">▲</button>
+        <button class="btn btn-left" onclick="sendCommand('L')">◀</button>
+        <button class="btn btn-stop" onclick="sendCommand('S')">🛑</button>
+        <button class="btn btn-right" onclick="sendCommand('R')">▶</button>
+        <button class="btn btn-down" onclick="sendCommand('B')">▼</button>
+    </div>
+    <div class="speed-controls">
+        <button class="btn btn-speed" onclick="sendCommand('-')">➖</button>
+        <button class="btn btn-speed" onclick="sendCommand('+')">➕</button>
+    </div>
+    <script>
+        // Взимаме CSRF токена от скритото поле, генерирано от Django
+        const getCSRFToken = () => {
+            return document.querySelector('[name=csrfmiddlewaretoken]').value;
+        };
+
+        const statusBar = document.getElementById('status-bar');
+
+        // Функция за изпращане на команди към Django бекенда
+        function sendCommand(cmd) {
+            // Визуален фийдбек
+            statusBar.innerText = `Изпращане на команда: ${cmd}...`;
+            statusBar.style.color = '#fbc531'; // Жълт цвят за зареждане
+
+            fetch('/api/control/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken() // Добавяме токена в хедъра
+                },
+                body: JSON.stringify({ command: cmd })
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Грешка в мрежата');
+            })
+            .then(data => {
+                // Успешен отговор
+                statusBar.innerText = `Статус: ${data.message}`;
+                statusBar.style.color = '#4cd137'; // Зелен цвят за успех
+            })
+            .catch(error => {
+                // Грешка
+                statusBar.innerText = 'Статус: Грешка при връзката сървъра!';
+                statusBar.style.color = '#e84118'; // Червен цвят за грешка
+                console.error('Error:', error);
+            });
+        }
+
+        // Добавяме клавиатурен контрол (Стрелки за движение, Space за Стоп)
+        document.addEventListener('keydown', function(event) {
+            switch(event.key) {
+                case 'ArrowUp': sendCommand('F'); break;
+                case 'ArrowDown': sendCommand('B'); break;
+                case 'ArrowLeft': sendCommand('L'); break;
+                case 'ArrowRight': sendCommand('R'); break;
+                case ' ': sendCommand('S'); break;
+                case '+': case '=': sendCommand('+'); break;
+                case '-': sendCommand('-'); break;
+            }
+        });
+    </script>
 </body>
 </html>
