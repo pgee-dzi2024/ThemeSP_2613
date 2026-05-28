@@ -130,7 +130,7 @@
         const statusBar = document.getElementById('status-bar');
 
         // Функция за изпращане на команди към Django бекенда
-        function p(cmd) {
+        function sendCommand(cmd) {
             // Визуален фийдбек
             statusBar.innerText = `Изпращане на команда: ${cmd}...`;
             statusBar.style.color = '#fbc531'; // Жълт цвят за зареждане
